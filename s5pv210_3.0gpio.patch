@@ -1,0 +1,41 @@
+diff -r -u linux-3.0.8/drivers/gpio/gpio-s5pv210.c linux-3.0.8-gpio/drivers/gpio/gpio-s5pv210.c
+--- linux-3.0.8/drivers/gpio/gpio-s5pv210.c	2012-04-10 15:26:13.000000000 +0800
++++ linux-3.0.8-gpio/drivers/gpio/gpio-s5pv210.c	2012-12-08 14:57:17.997949092 +0800
+@@ -21,12 +21,14 @@
+ 
+ static struct s3c_gpio_cfg gpio_cfg = {
+ 	.set_config	= s3c_gpio_setcfg_s3c64xx_4bit,
++	.get_config	= s3c_gpio_getcfg_s3c64xx_4bit,
+ 	.set_pull	= s3c_gpio_setpull_updown,
+ 	.get_pull	= s3c_gpio_getpull_updown,
+ };
+ 
+ static struct s3c_gpio_cfg gpio_cfg_noint = {
+ 	.set_config	= s3c_gpio_setcfg_s3c64xx_4bit,
++	.get_config	= s3c_gpio_getcfg_s3c64xx_4bit,
+ 	.set_pull	= s3c_gpio_setpull_updown,
+ 	.get_pull	= s3c_gpio_getpull_updown,
+ };
+diff -r -u linux-3.0.8/drivers/gpio/Kconfig linux-3.0.8-gpio/drivers/gpio/Kconfig
+--- linux-3.0.8/drivers/gpio/Kconfig	2012-04-10 15:26:13.000000000 +0800
++++ linux-3.0.8-gpio/drivers/gpio/Kconfig	2012-12-08 14:21:52.243948876 +0800
+@@ -453,4 +453,11 @@
+ 	help
+ 	  Select this option to enable GPIO driver for the TPS65910
+ 	  chip family.
++
++config GPIO_BJW
++	tristate "GPIO support for Tiny6410/Mini6410/Tiny210/Mini210"
++	depends on CPU_S5PV210 || CPU_S3C6410
++	default y
++	help
++	  This option enables support for All GPIO read/write/cfg/pull on Tiny6410/Mini6410/Tiny210/Mini210.
+ endif
+diff -r -u linux-3.0.8/drivers/gpio/Makefile linux-3.0.8-gpio/drivers/gpio/Makefile
+--- linux-3.0.8/drivers/gpio/Makefile	2012-04-10 15:26:13.000000000 +0800
++++ linux-3.0.8-gpio/drivers/gpio/Makefile	2012-12-08 14:22:27.281948996 +0800
+@@ -48,3 +48,4 @@
+ obj-$(CONFIG_GPIO_ML_IOH)	+= ml_ioh_gpio.o
+ obj-$(CONFIG_AB8500_GPIO)       += ab8500-gpio.o
+ obj-$(CONFIG_GPIO_TPS65910)	+= tps65910-gpio.o
++obj-$(CONFIG_GPIO_BJW)	+= bjwgpio.o

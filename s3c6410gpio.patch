@@ -1,0 +1,69 @@
+diff -r -u linux-2.6.36-android/arch/arm/plat-samsung/gpio-config.c linux-2.6.36-android-gpio/arch/arm/plat-samsung/gpio-config.c
+--- linux-2.6.36-android/arch/arm/plat-samsung/gpio-config.c	2011-03-14 12:39:42.000000000 +0800
++++ linux-2.6.36-android-gpio/arch/arm/plat-samsung/gpio-config.c	2012-10-30 16:52:54.000000000 +0800
+@@ -80,6 +80,22 @@
+ }
+ EXPORT_SYMBOL(s3c_gpio_setpull);
+ 
++s3c_gpio_pull_t s3c_gpio_getpull(unsigned int pin)
++{
++	struct s3c_gpio_chip *chip = s3c_gpiolib_getchip(pin);
++	unsigned long flags;
++	int offset;
++	u32 pup = 0;
++	if (chip) {
++		offset = pin - chip->chip.base;
++		s3c_gpio_lock(chip, flags);
++		pup = s3c_gpio_do_getpull(chip, offset);
++		s3c_gpio_unlock(chip, flags);
++	}
++	return (__force s3c_gpio_pull_t)pup;
++}
++EXPORT_SYMBOL(s3c_gpio_getpull);
++
+ #ifdef CONFIG_S3C_GPIO_CFG_S3C24XX
+ int s3c_gpio_setcfg_s3c24xx_a(struct s3c_gpio_chip *chip,
+ 			      unsigned int off, unsigned int cfg)
+diff -r -u linux-2.6.36-android/arch/arm/plat-samsung/include/plat/gpio-cfg-helpers.h linux-2.6.36-android-gpio/arch/arm/plat-samsung/include/plat/gpio-cfg-helpers.h
+--- linux-2.6.36-android/arch/arm/plat-samsung/include/plat/gpio-cfg-helpers.h	2011-03-14 12:39:42.000000000 +0800
++++ linux-2.6.36-android-gpio/arch/arm/plat-samsung/include/plat/gpio-cfg-helpers.h	2012-10-30 17:39:43.000000000 +0800
+@@ -41,7 +41,11 @@
+ {
+ 	return (chip->config->set_pull)(chip, off, pull);
+ }
+-
++static inline s3c_gpio_pull_t s3c_gpio_do_getpull(struct s3c_gpio_chip *chip,
++                          unsigned int off)
++{
++    return chip->config->get_pull(chip, off);
++}
+ /**
+  * s3c_gpio_setcfg_s3c24xx - S3C24XX style GPIO configuration.
+  * @chip: The gpio chip that is being configured.
+Only in linux-2.6.36-android-gpio/drivers/gpio: bjwgpio.c
+diff -r -u linux-2.6.36-android/drivers/gpio/Kconfig linux-2.6.36-android-gpio/drivers/gpio/Kconfig
+--- linux-2.6.36-android/drivers/gpio/Kconfig	2011-03-14 12:39:58.000000000 +0800
++++ linux-2.6.36-android-gpio/drivers/gpio/Kconfig	2012-10-30 18:17:29.722746870 +0800
+@@ -361,4 +361,11 @@
+ 	  This driver provides support for driving the pins in output
+ 	  mode only. Input mode is not supported.
+ 
++config GPIO_BJW
++	tristate "GPIO support for Tiny6410/Mini6410/Tiny210/Mini210"
++	depends on CPU_S5PV210 || CPU_S3C6410
++	default y
++	help
++	  This option enables support for All GPIO read/write/cfg/pull on Tiny6410/Mini6410/Tiny210/Mini210.
++
+ endif
+diff -r -u linux-2.6.36-android/drivers/gpio/Makefile linux-2.6.36-android-gpio/drivers/gpio/Makefile
+--- linux-2.6.36-android/drivers/gpio/Makefile	2011-03-14 12:39:58.000000000 +0800
++++ linux-2.6.36-android-gpio/drivers/gpio/Makefile	2012-10-30 18:17:49.449745592 +0800
+@@ -37,3 +37,6 @@
+ obj-$(CONFIG_GPIO_RDC321X)	+= rdc321x-gpio.o
+ obj-$(CONFIG_GPIO_JANZ_TTL)	+= janz-ttl.o
+ obj-$(CONFIG_GPIO_SX150X)	+= sx150x.o
++obj-$(CONFIG_GPIO_BJW)	+= bjwgpio.o
++
++
+

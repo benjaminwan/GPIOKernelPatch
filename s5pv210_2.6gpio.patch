@@ -1,0 +1,84 @@
+diff -r -u linux-2.6.35.7/arch/arm/mach-s5pv210/gpiolib.c linux-2.6.35.7-gpio/arch/arm/mach-s5pv210/gpiolib.c
+--- linux-2.6.35.7/arch/arm/mach-s5pv210/gpiolib.c	2011-08-08 12:52:05.000000000 +0800
++++ linux-2.6.35.7-gpio/arch/arm/mach-s5pv210/gpiolib.c	2012-10-30 10:45:25.250745003 +0800
+@@ -23,12 +23,14 @@
+ 
+ static struct s3c_gpio_cfg gpio_cfg = {
+ 	.set_config	= s3c_gpio_setcfg_s3c64xx_4bit,
++	.get_config	= s3c_gpio_getcfg_s3c64xx_4bit,
+ 	.set_pull	= s3c_gpio_setpull_updown,
+ 	.get_pull	= s3c_gpio_getpull_updown,
+ };
+ 
+ static struct s3c_gpio_cfg gpio_cfg_noint = {
+ 	.set_config	= s3c_gpio_setcfg_s3c64xx_4bit,
++	.get_config	= s3c_gpio_getcfg_s3c64xx_4bit,
+ 	.set_pull	= s3c_gpio_setpull_updown,
+ 	.get_pull	= s3c_gpio_getpull_updown,
+ };
+diff -r -u linux-2.6.35.7/arch/arm/plat-samsung/gpio-config.c linux-2.6.35.7-gpio/arch/arm/plat-samsung/gpio-config.c
+--- linux-2.6.35.7/arch/arm/plat-samsung/gpio-config.c	2011-08-08 12:52:05.000000000 +0800
++++ linux-2.6.35.7-gpio/arch/arm/plat-samsung/gpio-config.c	2012-10-30 11:06:40.894745004 +0800
+@@ -80,6 +80,22 @@
+ }
+ EXPORT_SYMBOL(s3c_gpio_setpull);
+ 
++s3c_gpio_pull_t s3c_gpio_getpull(unsigned int pin)
++{
++	struct s3c_gpio_chip *chip = s3c_gpiolib_getchip(pin);
++	unsigned long flags;
++	int offset;
++	u32 pup = 0;
++	if (chip) {
++		offset = pin - chip->chip.base;
++		s3c_gpio_lock(chip, flags);
++		pup = s3c_gpio_do_getpull(chip, offset);
++		s3c_gpio_unlock(chip, flags);
++	}
++	return (__force s3c_gpio_pull_t)pup;
++}
++EXPORT_SYMBOL(s3c_gpio_getpull);
++
+ int s3c_gpio_setpin(unsigned int pin, s3c_gpio_pull_t level)
+ {
+         struct s3c_gpio_chip *chip = s3c_gpiolib_getchip(pin);
+diff -r -u linux-2.6.35.7/arch/arm/plat-samsung/include/plat/gpio-cfg-helpers.h linux-2.6.35.7-gpio/arch/arm/plat-samsung/include/plat/gpio-cfg-helpers.h
+--- linux-2.6.35.7/arch/arm/plat-samsung/include/plat/gpio-cfg-helpers.h	2011-08-08 12:52:05.000000000 +0800
++++ linux-2.6.35.7-gpio/arch/arm/plat-samsung/include/plat/gpio-cfg-helpers.h	2012-10-30 11:12:13.974745000 +0800
+@@ -41,7 +41,11 @@
+ {
+ 	return (chip->config->set_pull)(chip, off, pull);
+ }
+-
++static inline s3c_gpio_pull_t s3c_gpio_do_getpull(struct s3c_gpio_chip *chip,
++                          unsigned int off)
++{
++    return chip->config->get_pull(chip, off);
++}
+ static inline int s3c_gpio_do_setpin(struct s3c_gpio_chip *chip,
+ 				      unsigned int off, s3c_gpio_pull_t level)
+ {
+Only in linux-2.6.35.7-gpio/drivers/gpio: bjwgpio.c
+diff -r -u linux-2.6.35.7/drivers/gpio/Kconfig linux-2.6.35.7-gpio/drivers/gpio/Kconfig
+--- linux-2.6.35.7/drivers/gpio/Kconfig	2011-08-08 12:52:22.000000000 +0800
++++ linux-2.6.35.7-gpio/drivers/gpio/Kconfig	2012-10-30 18:15:51.322745008 +0800
+@@ -343,4 +343,10 @@
+ 	  This driver provides support for driving the pins in output
+ 	  mode only. Input mode is not supported.
+ 
++config GPIO_BJW
++	tristate "GPIO support for Tiny6410/Mini6410/Tiny210/Mini210"
++	depends on CPU_S5PV210 || CPU_S3C6410
++	default y
++	help
++	  This option enables support for All GPIO read/write/cfg/pull on Tiny6410/Mini6410/Tiny210/Mini210.
+ endif
+diff -r -u linux-2.6.35.7/drivers/gpio/Makefile linux-2.6.35.7-gpio/drivers/gpio/Makefile
+--- linux-2.6.35.7/drivers/gpio/Makefile	2011-08-08 12:52:22.000000000 +0800
++++ linux-2.6.35.7-gpio/drivers/gpio/Makefile	2012-10-30 18:16:14.565744599 +0800
+@@ -35,3 +35,4 @@
+ obj-$(CONFIG_GPIO_SCH)		+= sch_gpio.o
+ obj-$(CONFIG_GPIO_RDC321X)	+= rdc321x-gpio.o
+ obj-$(CONFIG_GPIO_JANZ_TTL)	+= janz-ttl.o
++obj-$(CONFIG_GPIO_BJW)	+= bjwgpio.o
+
